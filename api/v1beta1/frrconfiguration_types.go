@@ -26,16 +26,119 @@ type FRRConfigurationSpec struct {
 	// +optional
 	BGP BGPConfig `json:"bgp,omitempty"`
 
+	// NexthopGroup is the definition of NextHops for use by zebra.
+	// +optional
+	// +kubebuilder:validation:items:UniqueItems
+	NexthopGroups []NexthopGroup `json:"nexthopGroup,omitempty"`
+
+	// PBR is the configuration related to the PBR protocol.
+	// +optional
+	PBR PBRConfig `json:"pbr,omitempty"`
+
 	// Raw is a snippet of raw frr configuration that gets appended to the
 	// one rendered translating the type safe API.
 	// +optional
 	Raw RawConfig `json:"raw,omitempty"`
+
 	// NodeSelector limits the nodes that will attempt to apply this config.
 	// When specified, the configuration will be considered only on nodes
 	// whose labels match the specified selectors.
 	// When it is not specified all nodes will attempt to apply this config.
 	// +optional
 	NodeSelector metav1.LabelSelector `json:"nodeSelector,omitempty"`
+}
+
+// NexthopGroup is the definition of NextHops for use by zebra.
+type NexthopGroup struct {
+	// Name is the name of the nexthop group.
+	Name string `json:"name"`
+
+	// NextHops is the list of hops associated with this nexthop group.
+	NextHops []Nexthop `json:"nexthops"`
+}
+
+// Nexthop describes a routing Nexthop
+type Nexthop struct {
+	// Address is the ip address of the next hop (blackhole will drop
+	// packages).
+	Address string `json:"address,omitempty"`
+
+	// Interface is the interface used to forward packages. This is useful
+	// if the interface is a ptp connection or similar.
+	Interface string `json:"interface,omitempty"`
+
+	// NexthopVRF is the VRF the nexthop is on.
+	NexthopVRF string `json:"nexthopVrf,omitempty"`
+}
+
+// PBRConfig is the configuration related to the PBR protocol.
+type PBRConfig struct {
+	// PBRMaps is the list of pbr Maps to be used by pbr policies.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +listMapKey=sequence
+	PBRMaps []PBRMap `json:"pbrMaps,omitempty"`
+
+	// PBRPolicies is the list of interfaces linked to pbr maps.
+	// +optional
+	PBRPolicies []PBRPolicy `json:"pbrPolicies,omitempty"`
+}
+
+// PBRMap is a ruleset for matching packages applied via pbrPolicy.
+type PBRMap struct {
+	// Name is the name applied to this map. It must be unique.
+	Name string `json:"name"`
+
+	// Sequence is the order in which rules/maps are applied by PBR.
+	// Lower values mean higher prevalence.
+	Sequence string `json:"sequence"`
+
+	// Match is the set of rules applied to match a package.
+	Match PBRMatch `json:"match"`
+
+	// NexthopGroup sets a group of nexthops used for forwarding a matched
+	// package.
+	NexthopGroup string `json:"nexthopGroup,omitempty"`
+
+	// Nexthop defines and sets a nexthop to forward the package with.
+	Nexthop Nexthop `json:"Nexthop,omitempty"`
+
+	// VRF sets the vrf name used to forward the package. Set to unchanged or
+	// omit if you want to keep the VRF of the source interface.
+	VRF string `json:"vrf,omitempty"`
+}
+
+
+type PBRMatch struct {
+	// SrcIp matches the source IP range of a package
+	// +optional
+	SrcIp string `json:"srcIp,omitempty"`
+
+	// DstIp matches the target IP range of a package
+	// +optional
+	DstIp string `json:"dstIp,omitempty"`
+
+	// SrcPort matches the data protocols source port
+	// +optional
+	SrcPort int `json:"srcPort,omitempty"`
+
+	// DstPort matches the data protocols source port
+	// +optional
+	DstPort int `json:"dstPort,omitempty"`
+
+	// IpProtocol matches the protocol of a package
+	// +optional
+	IpProtocol string `json:"ipProtocol,omitempty"`
+}
+
+// PBRPolicy enables a pbrMap on an interface.
+type PBRPolicy struct {
+	// Interface is the name of a network Interface
+	Interface string `json:"interface"`
+
+	// PBRMapName is the name of a pbr ruleset map
+	PBRMapName string `json:"pbrMapName"`
 }
 
 // RawConfig is a snippet of raw frr configuration that gets appended to the

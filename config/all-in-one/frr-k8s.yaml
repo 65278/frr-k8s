@@ -416,6 +416,42 @@ spec:
                       type: object
                     type: array
                 type: object
+              nexthopGroup:
+                description: NexthopGroup is the definition of NextHops for use by
+                  zebra.
+                items:
+                  description: NexthopGroup is the definition of NextHops for use
+                    by zebra.
+                  properties:
+                    name:
+                      description: Name is the name of the nexthop group.
+                      type: string
+                    nexthops:
+                      description: NextHops is the list of hops associated with this
+                        nexthop group.
+                      items:
+                        description: Nexthop describes a routing Nexthop
+                        properties:
+                          address:
+                            description: |-
+                              Address is the ip address of the next hop (blackhole will drop
+                              packages).
+                            type: string
+                          interface:
+                            description: |-
+                              Interface is the interface used to forward packages. This is useful
+                              if the interface is a ptp connection or similar.
+                            type: string
+                          nexthopVrf:
+                            description: NexthopVRF is the VRF the nexthop is on.
+                            type: string
+                        type: object
+                      type: array
+                  required:
+                  - name
+                  - nexthops
+                  type: object
+                type: array
               nodeSelector:
                 description: |-
                   NodeSelector limits the nodes that will attempt to apply this config.
@@ -466,6 +502,105 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-map-type: atomic
+              pbr:
+                description: PBR is the configuration related to the PBR protocol.
+                properties:
+                  pbrMaps:
+                    description: PBRMaps is the list of pbr Maps to be used by pbr
+                      policies.
+                    items:
+                      description: PBRMap is a ruleset for matching packages applied
+                        via pbrPolicy.
+                      properties:
+                        Nexthop:
+                          description: Nexthop defines and sets a nexthop to forward
+                            the package with.
+                          properties:
+                            address:
+                              description: |-
+                                Address is the ip address of the next hop (blackhole will drop
+                                packages).
+                              type: string
+                            interface:
+                              description: |-
+                                Interface is the interface used to forward packages. This is useful
+                                if the interface is a ptp connection or similar.
+                              type: string
+                            nexthopVrf:
+                              description: NexthopVRF is the VRF the nexthop is on.
+                              type: string
+                          type: object
+                        match:
+                          description: Match is the set of rules applied to match
+                            a package.
+                          properties:
+                            dstIp:
+                              description: DstIp matches the target IP range of a
+                                package
+                              type: string
+                            dstPort:
+                              description: DstPort matches the data protocols source
+                                port
+                              type: integer
+                            ipProtocol:
+                              description: IpProtocol matches the protocol of a package
+                              type: string
+                            srcIp:
+                              description: SrcIp matches the source IP range of a
+                                package
+                              type: string
+                            srcPort:
+                              description: SrcPort matches the data protocols source
+                                port
+                              type: integer
+                          type: object
+                        name:
+                          description: Name is the name applied to this map. It must
+                            be unique.
+                          type: string
+                        nexthopGroup:
+                          description: |-
+                            NexthopGroup sets a group of nexthops used for forwarding a matched
+                            package.
+                          type: string
+                        sequence:
+                          description: |-
+                            Sequence is the order in which rules/maps are applied by PBR.
+                            Lower values mean higher prevalence.
+                          type: string
+                        vrf:
+                          description: |-
+                            VRF sets the vrf name used to forward the package. Set to unchanged or
+                            omit if you want to keep the VRF of the source interface.
+                          type: string
+                      required:
+                      - match
+                      - name
+                      - sequence
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    - sequence
+                    x-kubernetes-list-type: map
+                  pbrPolicies:
+                    description: PBRPolicies is the list of interfaces linked to pbr
+                      maps.
+                    items:
+                      description: PBRPolicy enables a pbrMap on an interface.
+                      properties:
+                        interface:
+                          description: Interface is the name of a network Interface
+                          type: string
+                        pbrMapName:
+                          description: PBRMapName is the name of a pbr ruleset map
+                          type: string
+                      required:
+                      - interface
+                      - pbrMapName
+                      type: object
+                    type: array
+                type: object
               raw:
                 description: |-
                   Raw is a snippet of raw frr configuration that gets appended to the

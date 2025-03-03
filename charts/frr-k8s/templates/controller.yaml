@@ -101,6 +101,16 @@ data:
     line vty
     log file /etc/frr/frr.log informational
 ---
+# FRR scripts, placeholder
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "frrk8s.fullname" . }}-frr-scripts
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "frrk8s.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frr-k8s
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -147,6 +157,11 @@ spec:
             name: {{ template "frrk8s.fullname" . }}-frr-startup
         - name: frr-conf
           emptyDir: {}
+        - name: frr-scripts
+          projected:
+            sources:
+            - configMap:
+                name: {{ template "frrk8s.fullname" . }}-frr-scripts
         - name: reloader
           emptyDir: {}
         - name: metrics
@@ -167,6 +182,18 @@ spec:
           volumeMounts:
             - name: frr-startup
               mountPath: /tmp/frr
+            - name: frr-conf
+              mountPath: /etc/frr
+        # Copies lua scripts
+        - name: cp-frr-scripts
+          image: {{ .Values.frrk8s.frr.image.repository }}:{{ .Values.frrk8s.frr.image.tag | default .Chart.AppVersion }}
+          securityContext:
+            runAsUser: 100
+            runAsGroup: 101
+          command: ["/bin/sh", "-c", "cp -rLf /tmp/frr-scripts /etc/frr/scripts"]
+          volumeMounts:
+            - name: frr-scripts
+              mountPath: /tmp/frr-scripts
             - name: frr-conf
               mountPath: /etc/frr
         # Copies the reloader to the shared volume between the speaker and reloader.
